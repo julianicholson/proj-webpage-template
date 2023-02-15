@@ -1,7 +1,184 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 1 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Rasterizer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1>
+<h1 align="middle">Project 1: Rasterizer</h1>
+<h2 align="middle">Uri Kreindler, Julia Nicholson</h2>
+<h2 align="middle">Team: concaveHull</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>In this project, we completed an implementation of a basic rasterizer. We started by drawing unicolor 
+  triangles and then proceeded to add antialiasing via supersampling. We implemented some elementary
+ transform matrices, and used barycentric coordinates to enable both pixel and level sampling for texture
+ mapping (the latter using mipmaps). This project really taught us how many smaller components and concepts
+get integrated in the process of generating even a simple image of a triangle! We also found interesting 
+the idea of temporarily expanding the canvas during supersampling, as we initially tried to take a different
+ approach and just reduce the distance between consecutive sample points.</p>
+
+<h2 align="middle">Section I: Rasterization</h2>
+
+<h3 align="middle">Part 1: Rasterizing single-color triangles</h3>
+
+<p> The rasterize_triangle() function takes in the coordinates of three vertices and fills in the pixels within the triangle described by those vertices. First, it finds the bounding box of the triangle by finding the maximum and mininum x and y values of the three vertices. The function then iterates through each point in the bounding box and checking whether the point is within the triangle using the three line test. If it is, then the pixel corresponding to that point is filled. For each point, there are two checks of the three line test: one for passing over the vertices in a clockwise direction, and one for a counterclockwise direction.</p>
+<p> This implementation is as efficient as checking all the points within the bounding box of the triangle, because that is exactly what it does. Each point within the bounding box is checked once, and each point outside the bounding box is not sampled.</p>
+
+<div align="middle">
+<img src="images/task1.png" align="middle" width="400px"/>
+<figcaption align="middle">test4.svg with default viewing parameters.</figcaption>
+</div>
+
+<h3 align="middle">Part 2: Antialiasing triangles</h3>
+<p> Supersampling can reduce jaggies and other alias artifacts by creating a blurred effect around the boundary lines in an image.</p>
+<p> To implement supersampling, the sample buffer is resized by a factor of the sample rate. The purpose of the sample buffer is to store all the values of the supersamples, which will eventually be averaged together per corresponding pixel to generate the final image in the frame buffer. The only modification to rasterize_triangle was to map the coordinates of the triangle vertices to the larger (sample buffer) grid, by multiplying them by sqrt(sample_rate). When filling in a pixel, we index into the sample buffer with an extra factor of sqrt(sample_rate) to account for the expanded sample_buffer size. </p>
+<p>The majority of supersampling work is done by resolve_to_framebuffer(), whose purpose is to take the supersamples in the sample_buffer and average them together to fill the frame buffer. For each pixel in the frame buffer, we keep a running sum of the red, green, and blue values for that pixel. The sample buffer is sampled with a stride of sqrt(sample_rate) in both the x and y directions, to collect the r/g/b values for each supersample corresponding to the current pixel. After collecting the supersamples from the sample buffer, the r/g/b values are divided by sample_rate and are put in the frame buffer for the final pixel value.</p>
+<p> Below are examples of the same image with different sample rates. Higher sample rates create a more smooth and uniform resulting image, which is especially apparent at the edges and narrow vertices of a triangle. Supersampling has this effect because it allows a pixel to no longer be limited to an all-or-nothing value, and reduces high-frequency changes at the edges of triangles and between colors in the image.</p>
+
+<div align="middle">
+    <table style="width=100%">
+        <tr>
+            <td>
+                <img src="images/task1.png" align="middle" width="400px"/>
+                <figcaption align="middle">1 sample per pixel.</figcaption>
+            </td>
+            <td>
+                <img src="images/sample4.png" align="middle" width="400px"/>
+                <figcaption align="middle">4 samples per pixel.</figcaption>
+            </td>
+        </tr>
+        <br>
+        </table>
+    <img src="images/sample16.png" align="middle" width="400px"/>
+    <figcaption align="middle">16 samples per pixel.</figcaption>
+</div>
+
+
+<h3 align="middle">Part 3: Transforms</h3>
+<div align="middle">
+  <img src="images/cubeman.png" align="middle" width="400px"/>
+  <figcaption align="middle">Cubeman jumping ecstatically.</figcaption>
+</div>
+
+
+
+<h2 align="middle">Section II: Sampling</h2>
+
+<h3 align="middle">Part 4: Barycentric coordinates</h3>
+<p>Barycentric coordinates are a representation of a point relative to the three vertices of some triangle.
+  The coordinates (a, b, c) can be thought of as "weights" for each vertex, and a + b + c = 1. 
+  Thus we are in a sense representing a specific point as a linear combination of the triangle's vertices.
+  A visual aid is provided below:
+</p>
+<div align="middle">
+  <img src="images/baryTri.png" align="middle" width="400px"/>
+  <figcaption align="middle">Each point in the interior of the triangle is colored a smoothly blended 
+    combination of the three vertex colors: blue, peach, and green.</figcaption>
+
+    <img src="images/gradient.png" align="middle" width="400px"/>
+    <figcaption align="middle">svg/basic/test7.svg with default viewing parameters and sample rate 1</figcaption>
+</div>
+
+<h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
+<p> Pixel sampling utilizes a precomputed texture by mapping each point in sample space to texture space and then taking the value of the texture at that point. The rasterize_textured_triangle() method takes in the vertex coordinates of a triangle and its corresponding coordinates in texture space, and fills in the triangle by sampling the texture space using barycentric coordinates and the specified pixel sampling method. There are two methods for pixel sampling: sample_nearest() and sample_bilinear(). Sample_nearest gets the texture value of the nearest point to a given sample point. Bilinear sampling uses linear interpolation on the four nearest points to get a final texture value for the pixel.</p>
+<p> Below are examples of the same image with different pixel sampling and supersampling methods. When the supersampling rate is low, it is especially apparent that bilinear pixel sampling produces a smoother image. When the supersample rate is high, it is more difficult to tell the difference between different pixel sampling methods. This is because when you sample the pixel values at a high rate, there is a good deal of averaging the values around a pixel already, so using bilinear interpolation on top of that doesn't make much of an apparent difference. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/nearest1.png" align="middle" width="400px"/>
+        <figcaption align="middle">nearest sampling with sample rate 1.</figcaption>
+      </td>
+      <td>
+        <img src="images/bilinear1.png" align="middle" width="400px"/>
+        <figcaption align="middle">bilinear sampling with sample rate 1.</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/nearest16.png" align="middle" width="400px"/>
+        <figcaption align="middle">nearest sampling with sample rate 16.</figcaption>
+      </td>
+      <td>
+        <img src="images/bilinear16.png" align="middle" width="400px"/>
+        <figcaption align="middle">bilinear sampling with sample rate 16.</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+
+
+<h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
+<p>
+  Level sampling is a method of texture mapping that utilizes mipmaps to precompute filtered versions
+  of a given texture at different resolutions. The level of a pixel is determined by its derivatives in 
+  texture space. Then all one has to do is sample from the correct mipmap level. Level sampling provides
+  faster speed and better smoothing, but worse memory usage than pixel sampling, as it requires storing each level of the mipmap.
+  Supersampling is very good at antialiasing, but is the slowest of the three techniques. It also requires
+  increased memory to store the larger sample buffer canvas.
+</p>
+
+<p>Below you can compare 4 versions of the same image, each using a different sampling technique: </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/s1.png" align="middle" width="400px"/>
+        <figcaption align="middle">L_ZERO & P_NEAREST</figcaption>
+      </td>
+      <td>
+        <img src="images/s3.png" align="middle" width="400px"/>
+        <figcaption align="middle">L_ZERO AND P_LINEAR</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/s2.png" align="middle" width="400px"/>
+        <figcaption align="middle">L_NEAREST AND P_NEAREST</figcaption>
+      </td>
+      <td>
+        <img src="images/s4.png" align="middle" width="400px"/>
+        <figcaption align="middle">L_NEAREST AND P_LINEAR</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+
+
+<!-- <h2 align="middle">Section III: Art Competition</h2>
+<p>If you are not participating in the optional art competition, don't worry about this section!</p>
+
+<h3 align="middle">Part 7: Draw something interesting!</h3> -->
+
+</body>
 </html>
