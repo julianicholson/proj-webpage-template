@@ -50,7 +50,10 @@
 
 <h2 align="middle">Overview</h2>
 <p>
-    YOUR RESPONSE GOES HERE
+    This project is about rendering images of 3D scenes with realistic color and shading. Part 1 implements methods for generating rays, which represent lines of light that can bounce off of and intersect with objects in a scene. A pixel will appear lighter if more rays have come from a light source, potentially bouncing off of some surfaces, and ended up at the location for that pixel. Primatives such as triangles and spheres have their own intersection methods, which test for if a ray intersects that object. Part 2 implements Bounding Volume Heirarchy, which is a way to speed up rendering by representing objects as a binary tree, where objects that are physically closer in space are generally closer together in the tree data structure. Bounding Volume Heirarchy narrows down the number of objects that need to do an intersection test for a given ray, and is implemented in such a way that if a ray doesn't come close to a set of objects, those objects won't perform an intersection test.
+</p>
+<p>
+Up until part 3, surfaces are given colors depending on their normal vectors. Part 3 implements direct lighting, rendering images based on their BDSFs (Bi-directional scattering functions). After part 3, images have more realistic color and shadows. Part 4 builds indirect lighting on top of this, with functions that measure light rays that bounce multiple times before reaching the camera. This results in softer shadows and lighter, more realistic, global illumination, which is how light travels in real life. Part 5 implements adaptive sampling, which focuses ray samples on more 'tricky' areas of a scene, like very textured and wrinkly surfaces, or surfaces that are in partial shadow.
 </p>
 <br>
 
@@ -238,7 +241,7 @@ More light rays leads to less black spots (noise) in the image. With more light 
   Compare the results between uniform hemisphere sampling and lighting sampling in a one-paragraph analysis.
 </h3>
 <p>
-    Uniform hemisphere sampling creates a more grainy image, whereas importance sampling generates a more smooth image with fewer black spots. This is because hemisphere sampling sends rays in all directions (in a hemisphere). Some of these rays will not be pointed at the light, even if that point would be illuminated in real life. This is remedied in importance sampling because the rays are designed to point towards the light. Hemisphere sampling is more close to what reality is like, because in the real world a point doesn't "know" where the lights are positioned; each point has light/absence of light coming at it from all directions. But in a simulated situation like this, where we know the locations of all the lights, we know that all direct lighting must come from those lights, so we can sampling in the directions of the given lights.
+    Uniform hemisphere sampling creates a more grainy image, whereas importance sampling generates a more smooth image with fewer black spots. This is because hemisphere sampling sends rays in all directions (in a hemisphere). Some of these rays will not be pointed at the light, even if that point would be illuminated in real life. This is remedied in importance sampling because the rays are designed to point towards the light. Hemisphere sampling is more close to what reality is like, because in the real world a point doesn't "know" where the lights are positioned; each point has light/absence of light coming at it from all directions. But in a simulated situation like this, where we know the locations of all the lights, we know that all direct lighting must come from those lights, so we can sample in the directions of the given lights.
 </p>
 <br>
 
@@ -255,7 +258,7 @@ You will probably want to use the instructional machines for the above renders i
   Walk through your implementation of the indirect lighting function.
 </h3>
 <p>
-    YOUR RESPONSE GOES HEREE
+    Indirect lighting is implemented in pathtracer::at_least_one_bounce_radiance(...). This function generates an outgoing ray with probability 0.35, and otherwise returns only the direct lighting for the input ray. If an outgoing ray is generated, we test for an intersection between that outgoing ray and the scene. If there's an intersection, we recursively call at_least_one_bounce_radiance(...) on that ray to generate the indirect radiance for that point, and calculate indirect_lighting = (at_least_one_bounce_radiance(next_r, next_isctn) * f * cos) /(pdf * 0.35), where f and pdf are given by sample_f(...), and cos is defined simelar to above parts. Note that we also divide by 0.35, which is the probability of continuing to generate new rays. This is because we must normalize by the 'continuation' probability: the more likely it is for a ray to bounce for a long time, the more total lighting we will get for one pixel, so we must normalize by the coninuation probability to avoid an overly bright image.
 </p>
 <br>
 
@@ -267,12 +270,12 @@ You will probably want to use the instructional machines for the above renders i
   <table style="width:100%">
     <tr align="center">
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
-        <figcaption>example1.dae</figcaption>
+        <img src="images/bench_1024_2_5.png" align="middle" width="400px"/>
+        <figcaption>bench.dae</figcaption>
       </td>
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
-        <figcaption>example2.dae</figcaption>
+        <img src="images/CBsphere_p4.png" align="middle" width="400px"/>
+        <figcaption>CBspheres.dae</figcaption>
       </td>
     </tr>
   </table>
@@ -287,19 +290,19 @@ You will probably want to use the instructional machines for the above renders i
   <table style="width:100%">
     <tr align="center">
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
-        <figcaption>Only direct illumination (example1.dae)</figcaption>
+        <img src="images/CBbunny_1024_16_5_dir.png" align="middle" width="400px"/>
+        <figcaption>Only direct illumination (CBbunny.dae)</figcaption>
       </td>
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
-        <figcaption>Only indirect illumination (example1.dae)</figcaption>
+        <img src="images/CBbunny_1024_4_5_indir.png" align="middle" width="400px"/>
+        <figcaption>Only indirect illumination (CBbunny.dae)</figcaption>
       </td>
     </tr>
   </table>
 </div>
 <br>
 <p>
-    YOUR EXPLANATION GOES HERE
+    In only direct illumination, The shadows are very dark, and anywhere that is not in direct line of sight with the light is black. Indirect illumination creates softer, lighter shadows, because it allows the light to bounce more. Notice that within indirect illumination, the light source is black. This is because light at the light source is zero-bounce light, which is direct illumination.
 </p>
 <br>
 
@@ -311,27 +314,27 @@ You will probably want to use the instructional machines for the above renders i
   <table style="width:100%">
     <tr align="center">
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
+        <img src="images/CBbunny_1024_4_0.png" align="middle" width="400px"/>
         <figcaption>max_ray_depth = 0 (CBbunny.dae)</figcaption>
       </td>
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
+        <img src="images/CBbunny_1024_4_1.png" align="middle" width="400px"/>
         <figcaption>max_ray_depth = 1 (CBbunny.dae)</figcaption>
       </td>
     </tr>
     <tr align="center">
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
+        <img src="images/CBbunny_1024_4_2.png" align="middle" width="400px"/>
         <figcaption>max_ray_depth = 2 (CBbunny.dae)</figcaption>
       </td>
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
+        <img src="images/CBbunny_1024_4_3.png" align="middle" width="400px"/>
         <figcaption>max_ray_depth = 3 (CBbunny.dae)</figcaption>
       </td>
     </tr>
     <tr align="center">
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
+        <img src="images/CBbunny_1024_4_100.png" align="middle" width="400px"/>
         <figcaption>max_ray_depth = 100 (CBbunny.dae)</figcaption>
       </td>
     </tr>
@@ -339,7 +342,7 @@ You will probably want to use the instructional machines for the above renders i
 </div>
 <br>
 <p>
-    YOUR EXPLANATION GOES HERE
+    With max_ray_depth at zero and 1, there is no indirect lighting, so this looks the same as if indirect lighting weren't implemented. Once the max_ray_depth is 2 or greater, it allows for the light to bounce a little, and the shadows are lighter and the scene appears more realistic. It doesn't take many bounces for the images to converge: max_ray_depth = 100 isn't that different from max_ray_depth = 3.
 </p>
 <br>
 
@@ -351,37 +354,37 @@ You will probably want to use the instructional machines for the above renders i
   <table style="width:100%">
     <tr align="center">
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
+        <img src="images/CBbunny_1_4_3.png" align="middle" width="400px"/>
         <figcaption>1 sample per pixel (example1.dae)</figcaption>
       </td>
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
+        <img src="images/CBbunny_2_4_3.png" align="middle" width="400px"/>
         <figcaption>2 samples per pixel (example1.dae)</figcaption>
       </td>
     </tr>
     <tr align="center">
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
+        <img src="images/CBbunny_4_4_3_new.png" align="middle" width="400px"/>
         <figcaption>4 samples per pixel (example1.dae)</figcaption>
       </td>
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
+        <img src="images/CBbunny_8_4_3.png" align="middle" width="400px"/>
         <figcaption>8 samples per pixel (example1.dae)</figcaption>
       </td>
     </tr>
     <tr align="center">
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
+        <img src="images/CBbunny_16_4_3.png" align="middle" width="400px"/>
         <figcaption>16 samples per pixel (example1.dae)</figcaption>
       </td>
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
+        <img src="images/CBbunny_62_4_3.png" align="middle" width="400px"/>
         <figcaption>64 samples per pixel (example1.dae)</figcaption>
       </td>
     </tr>
     <tr align="center">
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
+        <img src="images/CBbunny_1024_4_3.png" align="middle" width="400px"/>
         <figcaption>1024 samples per pixel (example1.dae)</figcaption>
       </td>
     </tr>
@@ -389,7 +392,7 @@ You will probably want to use the instructional machines for the above renders i
 </div>
 <br>
 <p>
-    YOUR EXPLANATION GOES HERE
+    The more samples per pixel, the less graininess and noise there is in an image. One thing that I think may be a bug in my implementation is the graininess sometimes results in light spots rather than dark spots. Despite this potential bug, the convergent image (with 1024 samples per pixel) looks close to real life.
 </p>
 <br>
 
@@ -402,8 +405,13 @@ Pick one scene and render it with at least 2048 samples per pixel. Show a good s
   Explain adaptive sampling. Walk through your implementation of the adaptive sampling.
 </h3>
 <p>
-    YOUR RESPONSE GOES HERE
+    Some areas of an image might not need as many samples as others. A very smooth surface that is unobstructed from light might only need a few sample rays to produce an accurate pixel value, while a complex/rough surface that is partially shadowed would need lots of sample rays to get the level of detail in such a surface right. Adaptive sampling focuses on the 'tougher' areas in a scene to sample many times, while leaving the 'easier' areas only a few samples.
 </p>
+<p>
+Adaptive sampling is implemented in pathtracer::raytrace_pixel(...). Every samplesperBatch samples, there is a check for convergence. If I (defined below) is less than maxTolerence * mu, then the value for the given pixel has converged, and we can stop getting samples for that pixel. Otherwise, the function continues generating samples until num_samples samples have been taken. In the equation for I, mu is the mean illuminance for the samples so far, and sigma is the standard deviation.
+</p>
+<div align="middle">
+        <img src="images/I_eq.png" align="middle" width="400px"/>
 <br>
 
 <h3>
@@ -414,22 +422,22 @@ Pick one scene and render it with at least 2048 samples per pixel. Show a good s
   <table style="width:100%">
     <tr align="center">
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
-        <figcaption>Rendered image (example1.dae)</figcaption>
+        <img src="images/banana5.png" align="middle" width="400px"/>
+        <figcaption>Rendered image (banana.dae)</figcaption>
       </td>
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
-        <figcaption>Sample rate image (example1.dae)</figcaption>
+        <img src="images/banana5_rate.png" align="middle" width="400px"/>
+        <figcaption>Sample rate image (banana.dae)</figcaption>
       </td>
     </tr>
     <tr align="center">
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
-        <figcaption>Rendered image (example2.dae)</figcaption>
+        <img src="images/bunny5.png" align="middle" width="400px"/>
+        <figcaption>Rendered image (CBbunny.dae)</figcaption>
       </td>
       <td>
-        <img src="images/your_file.png" align="middle" width="400px"/>
-        <figcaption>Sample rate image (example2.dae)</figcaption>
+        <img src="images/bunny5_rate.png" align="middle" width="400px"/>
+        <figcaption>Sample rate image (CBbunny.dae)</figcaption>
       </td>
     </tr>
   </table>
