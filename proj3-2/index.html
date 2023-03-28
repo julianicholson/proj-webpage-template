@@ -17,7 +17,7 @@
 <br />
 <h1 align="middle">Assignment 3-2: Additional Features to PathTracer</h1>
     <h2 align="middle">Julia Nicholson</h2>
-    <h2 align="middle">(Webpage URL)</h2>
+    <h2 align="middle">Website URL: <a href="https://julianicholson.github.io/proj-webpage-template/proj3-2/index.html">https://julianicholson.github.io/proj-webpage-template/proj3-2/index.html</a></h2>
 
     <div class="padded">
 
@@ -25,10 +25,10 @@
         * NOTE: For this project, you will choose TWO out of the four given parts to complete. One of those parts must be Part 1 or Part 2. In other words, you can choose any combination of two parts except the pair (Part 3, Part 4).
 
         <h3 align="middle">Overview</h3>
-        <p>This project adds functionality for different kinds of surfaces. Part 1 implements reflective and refractive surfaces, which allows us to render images with materials like perfect mirrors and glass. Part 2 implements the microfacet model of surfaces, which allows us to simulate reflective materials with varying levels of roughness. After part 2, we can render any figuring with a multitude of conductive materials, like gold, silver, and copper.</p>
+        <p>This project adds functionality for different kinds of surfaces. Part 1 implements reflective and refractive surfaces, which allows us to render images with materials like perfect mirrors and glass. Part 2 implements the microfacet model of surfaces, which allows us to simulate reflective materials with varying levels of roughness. After part 2, we can render any figurine with a multitude of conductive materials, like gold, silver, and copper.</p>
         
         <h3 align="middle">Part 1. Mirror and Glass Materials</h3>
-        <p> In this part, I implemented functionality for reflective and refractive surfaces. Ideal mirror materials are completely reflective, and glass is partially reflective and partially refractive. BSDF::reflect() reflects a ray of light about the normal vector of a surface. BSDF::refract() takes an outgoing ray of light and refracts it accoridng to Snells law. Total internal refraction occurs when an incoming ray is almost glancing off of a refractive surface, so much so that it isn't refracted out of the surface. If 1 - (eta*eta)*(1 - (wo.z*wo.z)) is negative, we have total internal refraction, and the refract function returns false. This is where eta is the index of refraction and wo is the outgoing vector. To simulate a glass material, GlassBSDF::sample_f() first attempts to refract the outgoing ray, and if it cannot due to total internal refraction, it just performs a reflection. If refraction is possible, the function chooses to reflect with a probability R, and chooses to refract with a probability (1 - R), where R is Schlick's reflection coefficient. (if a material has a higher reflection coefficient, it is more reflective and less refractive). Where n1 is approximated at 1 for air, Schick's coefficient is calculated as: </p>
+        <p> In this part, I implemented functionality for reflective and refractive surfaces. Ideal mirror materials are completely reflective, and glass is partially reflective and partially refractive. BSDF::reflect() reflects a ray of light about the normal vector of a surface. BSDF::refract() takes an outgoing ray of light and refracts it accoridng to Snells law. Total internal refraction occurs when an incoming ray is almost glancing off a refractive surface, so much so that it isn't refracted out of the surface. If 1 - (eta*eta)*(1 - (wo.z*wo.z)) is negative, we have total internal refraction, and the refract function returns false. This is where eta is the index of refraction and wo is the outgoing vector. To simulate a glass material, GlassBSDF::sample_f() first attempts to refract the outgoing ray, and if it cannot due to total internal refraction, it just performs a reflection. If refraction is possible, the function chooses to reflect with a probability R, and chooses to refract with a probability (1 - R), where R is Schlick's reflection coefficient. (if a material has a higher reflection coefficient, it is more reflective and less refractive). Where n1 is approximated at 1 for air, Schick's coefficient is calculated as: </p>
         <img src="images/schlick.png" align="middle" width="400px"/>
 
         <p><b>
@@ -94,7 +94,7 @@
 
 
         <h3 align="middle">Part 2. Microfacet Material</h3>
-        <p> This part implements the microfacet model for materials, which is useful for modelling rough, reflective surfaces. In particular, we focus on conductive materials like gold and copper. This model uses the function below for f, where D is the normal distribution function, G is the shadow masking term, and F is the fresnel term. MicrofacterBSDF::D() implements the normal distribution function, and uses alpha, the roughness coefficient. MicrofacetBSDF::sample_f() importance samples the light directions acording to the normal distribution function. If the dot product of the normal vector and the sampled direction is negative, this means we've sampled an invalid direction (from inside the surface), so the function returns a zero vector.
+        <p> This part implements the microfacet model for materials, which is useful for modeling rough, reflective surfaces. In particular, we focus on conductive materials like gold and copper. This model uses the function below for f, where D is the normal distribution function, G is the shadow masking term, and F is the fresnel term. MicrofacterBSDF::D() implements the normal distribution function, and uses alpha, the roughness coefficient. MicrofacetBSDF::sample_f() importance samples the light directions acording to the normal distribution function. If the dot product of the normal vector and the sampled direction is negative, this means we've sampled an invalid direction (from inside the surface), so the function returns a zero vector.
         </p>
         <div align="middle">
                 <img src="images/f.png" align="middle" width="400px"/>
