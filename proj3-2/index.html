@@ -1,7 +1,125 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+    div.padded {
+      padding-top: 0px;
+      padding-right: 100px;
+      padding-bottom: 0.25in;
+      padding-left: 100px;
+    }
+  </style>
+<title>Your Name  |  CS 184</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+</head>
+<body>
+<br />
+<h1 align="middle">Assignment 3-2: Additional Features to PathTracer</h1>
+    <h2 align="middle">Julia Nicholson</h2>
+    <h2 align="middle">(Webpage URL)</h2>
+
+    <div class="padded">
+
+        
+        * NOTE: For this project, you will choose TWO out of the four given parts to complete. One of those parts must be Part 1 or Part 2. In other words, you can choose any combination of two parts except the pair (Part 3, Part 4).
+
+        <h3 align="middle">Overview</h3>
+        <p></p>
+        
+        <h3 align="middle">Part 1. Mirror and Glass Materials</h3>
+        <p> In this part, I implemented functionality for reflective and refractive surfaces. Ideal mirror materials are completely reflective, and glass is partially reflective and partially refractive. BSDF::reflect() reflects a ray of light about the normal vector of a surface. BSDF::refract() takes an outgoing ray of light and refracts it accoridng to Snells law. Total internal refraction occurs when an incoming ray is almost glancing off of a refractive surface, so much so that it isn't refracted out of the surface. If 1 - (eta*eta)*(1 - (wo.z*wo.z)) is negative, we have total internal refraction, and the refract function returns false. This is where eta is the index of refraction and wo is the outgoing vector. To simulate a glass material, GlassBSDF::sample_f() first attempts to refract the outgoing ray, and if it cannot due to total internal refraction, it just performs a reflection. If refraction is possible, the function chooses to reflect with a probability R, and chooses to refract with a probability (1 - R), where R is Schlick's reflection coefficient. (if a material has a higher reflection coefficient, it is more reflective and less refractive). Where n1 is approximated at 1 for air, Schick's coefficient is calculated as: </p>
+        <img src="images/schlick.png" align="middle" width="400px"/>
+
+        <p><b>
+            Show a sequence of six images of scene `CBspheres.dae` rendered with `max_ray_depth` set to 0, 1, 2, 3, 4, 5, and 100. The other settings should be at least 64 samples per pixel and 4 samples per light. Make sure to include all screenshots.
+        </b></p>
+        <div align="middle">
+          <table style="width:100%">
+            <tr align="center">
+              <td>
+                <img src="images/CBspheres0.png" align="middle" width="400px"/>
+                <figcaption>max_ray_depth = 0 (CBspheres)</figcaption>
+              </td>
+              <td>
+                <img src="images/CBspheres1.png" align="middle" width="400px"/>
+                <figcaption>max_ray_depth = 1 (CBspheres)</figcaption>
+              </td>
+            </tr>
+            <tr align="center">
+              <td>
+                  <img src="images/CBspheres2.png" align="middle" width="400px"/>
+                  <figcaption>max_ray_depth = 2 (CBspheres)</figcaption>
+              </td>
+              <td>
+                  <img src="images/CBspheres3.png" align="middle" width="400px"/>
+                  <figcaption>max_ray_depth = 3 (CBspheres)</figcaption>
+              </td>
+            </tr>
+            <tr align="center">
+              <td>
+                  <img src="images/CBspheres4.png" align="middle" width="400px"/>
+                  <figcaption>max_ray_depth = 4 (CBspheres)</figcaption>
+              </td>
+              <td>
+                  <img src="images/CBspheres5.png" align="middle" width="400px"/>
+                  <figcaption>max_ray_depth = 5 (CBspheres)</figcaption>
+              </td>
+            </tr>
+            <tr align="center">
+              <td>
+                  <img src="images/CBspheres100.png" align="middle" width="400px"/>
+                  <figcaption>max_ray_depth = 100 (CBspheres)</figcaption>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <br>
+
+        <br>
+        <p><b>
+            Point out the new multibounce effects that appear in each image.
+        </b></p>
+        <p>
+            When max ray depth is 0, all we can see is the light source. This makes sense because one bounce of light means light has been allowed to leave the light source and bounce off of objects. At one bounce of light, we have color on the walls that are in direct line of sight from the light source. There is also rectangles of reflective light on each of the balls. No refractive light will show up in this picture, because refractive light will be sent into the sphere, and it would have to 'bounce' out the other side, which is more bounces. Notice how the left ball, which is a perfect mirror, has a solid rectangle of reflective light, whereas the right sphere, glass, has a spotty reflection of the light source. This is because some of the light is being refracted into the sphere, rather than reflected.
+        </p>
+        <p>
+        At two bounces of light, we start to see reflection of the cornell box walls on the spheres. This is because it takes exactly two bounces for a wall to reflect off of a ball (one bounce off the wall, one bounce off the surface of the sphere). The reflection is more intense on the mirror (left) material than the partially refractive glass (right) material. Notice how the balls reflect as black in eachother's reflections. That's because it would take 3 bounces for color from the walls to reflect from one sphere to another (one bounce off the wall, one bounce off the first sphere, one bounce off the second sphere). At max_ray_depth = 3, a refractive image of the colored walls shows up in the glass sphere. This takes 3 bounces of light: one bounce off the wall, one 'bounce' through the surface of the sphere, and one bounce refracting out the other side of the same sphere. The reflection of the glass sphere in the mirror sphere only shows the reflective version of the glass sphere (3 bounces is exactly enough for light to bounce off the wall, off the glass sphere, and off the mirror sphere, but not enough for refraction to go through the glass sphere AND reflect off the mirror). There's a bright spot at the base of the glass sphere that represents the light source light refracting through the glass sphere and hitting the floor.
+        </p>
+        <p>
+        At four bounces, the reflection of the glass sphere now looks more accurate (like a refractive surface) in the mirror. There is also a small spot of light on the purple wall, which is the result of the bright spot at the base of the glass sphere reflecting off the wall. This same bright spot also bounces some rays off the bottom of the glass sphere, causing a little bright part on the bottom of the sphere. By 100 bounces, the difference is not so obvious. The image is pretty smooth and a little lighter, but since the maximum noticeable effects would take about 4 bounces (once off the wall, two for refraction, another reflection), 100 bounces doesn't change much for this scene.
+        </p>
+        <br>
+        <br>
+
+
+        <h3 align="middle">Part 2. Microfacet Material</h3>
+        <p><b>
+            Show a screenshot sequence of 4 images of scene `CBdragon_microfacet_au.dae` rendered with $\alpha$ set to 0.005, 0.05, 0.25 and 0.5. The other settings should be at least 128 samples per pixel and 1 samples per light. The number of bounces should be at least 5. Describe the differences between different images. Note that, to change the $\alpha$, just open the .dae file and search for `microfacet`.
+        </b></p>
+        <p>
+            Your response goes here.
+        </p>
+        <br>
+        <p><b>
+            Show two images of scene `CBbunny_microfacet_cu.dae` rendered using cosine hemisphere sampling (default) and your importance sampling. The sampling rate should be fixed at 64 samples per pixel and 1 samples per light. The number of bounces should be at least 5. Briefly discuss their difference.
+        </b></p>
+        <p>
+            Your response goes here.
+        </p>
+        <br>
+        <p><b>
+            Show at least one image with some other conductor material, replacing `eta` and `k`. Note that you should look up values for real data rather than modifying them arbitrarily. Tell us what kind of material your parameters correspond to.
+        </b></p>
+        <p>
+            Your response goes here.
+        </p>
+        <br>
+        
+        <br>
+
+    </div>
+</body>
 </html>
+
+
