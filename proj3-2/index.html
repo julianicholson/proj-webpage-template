@@ -25,7 +25,7 @@
         * NOTE: For this project, you will choose TWO out of the four given parts to complete. One of those parts must be Part 1 or Part 2. In other words, you can choose any combination of two parts except the pair (Part 3, Part 4).
 
         <h3 align="middle">Overview</h3>
-        <p></p>
+        <p>This project adds functionality for different kinds of surfaces. Part 1 implements reflective and refractive surfaces, which allows us to render images with materials like perfect mirrors and glass. Part 2 implements the microfacet model of surfaces, which allows us to simulate reflective materials with varying levels of roughness. After part 2, we can render any figuring with a multitude of conductive materials, like gold, silver, and copper.</p>
         
         <h3 align="middle">Part 1. Mirror and Glass Materials</h3>
         <p> In this part, I implemented functionality for reflective and refractive surfaces. Ideal mirror materials are completely reflective, and glass is partially reflective and partially refractive. BSDF::reflect() reflects a ray of light about the normal vector of a surface. BSDF::refract() takes an outgoing ray of light and refracts it accoridng to Snells law. Total internal refraction occurs when an incoming ray is almost glancing off of a refractive surface, so much so that it isn't refracted out of the surface. If 1 - (eta*eta)*(1 - (wo.z*wo.z)) is negative, we have total internal refraction, and the refract function returns false. This is where eta is the index of refraction and wo is the outgoing vector. To simulate a glass material, GlassBSDF::sample_f() first attempts to refract the outgoing ray, and if it cannot due to total internal refraction, it just performs a reflection. If refraction is possible, the function chooses to reflect with a probability R, and chooses to refract with a probability (1 - R), where R is Schlick's reflection coefficient. (if a material has a higher reflection coefficient, it is more reflective and less refractive). Where n1 is approximated at 1 for air, Schick's coefficient is calculated as: </p>
@@ -94,25 +94,73 @@
 
 
         <h3 align="middle">Part 2. Microfacet Material</h3>
+        <p> This part implements the microfacet model for materials, which is useful for modelling rough, reflective surfaces. In particular, we focus on conductive materials like gold and copper. This model uses the function below for f, where D is the normal distribution function, G is the shadow masking term, and F is the fresnel term. MicrofacterBSDF::D() implements the normal distribution function, and uses alpha, the roughness coefficient. MicrofacetBSDF::sample_f() importance samples the light directions acording to the normal distribution function. If the dot product of the normal vector and the sampled direction is negative, this means we've sampled an invalid direction (from inside the surface), so the function returns a zero vector.
+        </p>
+        <div align="middle">
+                <img src="images/f.png" align="middle" width="400px"/>
+                <figcaption>the function in MicrofacetBSDF::sample_f()</figcaption>
+                </div>
         <p><b>
             Show a screenshot sequence of 4 images of scene `CBdragon_microfacet_au.dae` rendered with $\alpha$ set to 0.005, 0.05, 0.25 and 0.5. The other settings should be at least 128 samples per pixel and 1 samples per light. The number of bounces should be at least 5. Describe the differences between different images. Note that, to change the $\alpha$, just open the .dae file and search for `microfacet`.
         </b></p>
+        <div align="middle">
+          <table style="width:100%">
+            <tr align="center">
+              <td>
+                <img src="images/dragon_005.png" align="middle" width="400px"/>
+                <figcaption>alpha = 0.005</figcaption>
+              </td>
+              <td>
+                <img src="images/dragon_05.png" align="middle" width="400px"/>
+                <figcaption>alpha = 0.05</figcaption>
+              </td>
+            </tr>
+            <tr align="center">
+              <td>
+                  <img src="images/dragon_25.png" align="middle" width="400px"/>
+                  <figcaption>alpha = 0.25</figcaption>
+              </td>
+              <td>
+                  <img src="images/dragon_5.png" align="middle" width="400px"/>
+                  <figcaption>alpha = 0.5</figcaption>
+              </td>
+            </tr>
+          </table>
+        </div>
         <p>
-            Your response goes here.
+            A larger alpha value increases the roughness of the microfacet surface, so with a higher alpha value, the dragon appears more matte. Lower alpha values make the dragon more shiney and you can see the colors of the walls reflected more clearly. Also, a lower alpha with this shiny-ness effect creates more specularity, which explains the number of bright dots in the lower-alpha images.
         </p>
         <br>
         <p><b>
             Show two images of scene `CBbunny_microfacet_cu.dae` rendered using cosine hemisphere sampling (default) and your importance sampling. The sampling rate should be fixed at 64 samples per pixel and 1 samples per light. The number of bounces should be at least 5. Briefly discuss their difference.
         </b></p>
+        <div align="middle">
+          <table style="width:100%">
+            <tr align="center">
+              <td>
+                <img src="images/bunny_cosine.png" align="middle" width="400px"/>
+                <figcaption>cosing hemisphere sampling</figcaption>
+              </td>
+              <td>
+                <img src="images/bunny_importance.png" align="middle" width="400px"/>
+                <figcaption>importance sampling</figcaption>
+              </td>
+        </tr>
+          </table>
+        </div>
         <p>
-            Your response goes here.
+            Importance sampling makes the image less spotty and grainy, which makes sense because it's sampling in the direction of expected light. In the importance sampled bunny, we can more clearly see the natural tone of the copper material, because of the clearer image.
         </p>
         <br>
         <p><b>
             Show at least one image with some other conductor material, replacing `eta` and `k`. Note that you should look up values for real data rather than modifying them arbitrarily. Tell us what kind of material your parameters correspond to.
         </b></p>
+        <div align="middle">
+                <img src="images/bunny_mercury.png" align="middle" width="400px"/>
+                <figcaption>Bunny made of mercury!</figcaption>
+                </div>
         <p>
-            Your response goes here.
+            This is an image of a bunny made out of mercury, which has eta values of 1.8795, 1.5472, and  1.1353. It has k values of 5.1076, 4.6437, and 3.9980. These values are for the red, green, and blue wavelengths of light: 614nm, 549nm, and 466nm.
         </p>
         <br>
         
