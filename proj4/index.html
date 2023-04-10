@@ -1,7 +1,227 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 4 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Mesh Editor</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1>
+<h1 align="middle">Project 4: Cloth Simulator</h1>
+<h2 align="middle">Julia Nicholson</h2>
+<h2 align="middle"> Website Url: <a href="https://julianicholson.github.io/proj-webpage-template/">https://julianicholson.github.io/proj-webpage-template/</a></h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>In this project, I implemented methods to simulate the physical structure of a cloth. A cloth can be approximated by many masses arranged in a grid, where the masses are connected to one another with springs that represent shearing, stretching, and connective forces between points on the cloth. When simulating a cloth falling through space, one can re-assign positions of each piece of the cloth by looking at the forces (from springs, gravity, etc.) acting on each piece, as well as the acceleration for that piece. Parts 3 and 4 handle collisions: in part 3 I implemented collisions between a cloth and other objects, and part 4 handles collisions with the cloth itself, so it doesn't fall or 'clip' through itself. Collisions are handled by testing the distance between two objects, and creating an appropriate repellant force between the objects.</p>
+
+<h2 align="middle">Part I: Masses and springs</h2>
+<p> cloth::buildGrid() in cloth.cpp constructs a grid of pointmasses stored in row-major order. Each point mass has springs connecting it to its adjacent masses: springs to the masses directly left and above a mass represent structural forces in the cloth, springs to the masses two to the left and two above represent bending forces, and springs to the diagonal left-above and diagonal right-above masses represent shearing forces. If the cloth starts simulation in a vertical position, some randomness is added to the initial horizontal positions of the masses, to allow for realistic bending and falling behaviour in later parts.
+</p>
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/pinned2_close.png" align="middle" width="400px"/>
+        <figcaption>wireframe for cloth</figcaption>
+      </td>
+      <td>
+        <img src="images/pinned2_shear.png" align="middle" width="400px"/>
+        <figcaption>only shearing constraints</figcaption>
+      </td>
+    </tr>
+    <tr align="center">
+      <td>
+          <img src="images/pinned2_noshear.png" align="middle" width="400px"/>
+          <figcaption>only structural+bending constraints</figcaption>
+      </td>
+      <td>
+          <img src="images/pinned2.png" align="middle" width="400px"/>
+          <figcaption>all constraints </figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h2 align="middle">Part 2: Simulation via Numerical Integration</h2>
+
+<p> Cloth::simulate(...) first calculates the total force acting on each pointmass in the cloth, determined by adjacent pointmasses and external forces such as gravity. The function adjusts each pointmass's position according to Verlet integration:
+</p>
+<img src="images/verlet.png" align="middle" width="400px"/>
+<p> Finally, the function constrains the positions of each pointmass so they never get too far away from one another. This prevents a ridiculously springy/liquidy appearing fabric.
+</p>
+
+<p> Below are examples of how changing parameters of the springs and pointmasses can affect the nature of the fabric. A low spring constant allows the pointmasses to stretch farther apart, giving the fabric a more loose, saggy, watery look. A higher spring constant keeps the fabric supple and taught. A low density for the pointmasses has a simelar visual effect as high spring constant: the fabric seems light and taught. A high density creates a heavy, sagging fabric. And low damping makes the fabric flap back and forth forever, taking longer to come to rest.
+</p>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/ks_5.png" align="middle" width="400px"/>
+        <figcaption>Low spring constant (ks = 5)</figcaption>
+      </td>
+      <td>
+        <img src="images/ks_50000.png" align="middle" width="400px"/>
+        <figcaption>High spring constant (ks = 50000)</figcaption>
+      </td>
+    </tr>
+    <tr align="center">
+      <td>
+          <img src="images/density_1.png" align="middle" width="400px"/>
+          <figcaption>low densitiy (density = 1) </figcaption>
+      </td>
+      <td>
+          <img src="images/density_100.png" align="middle" width="400px"/>
+          <figcaption>High density (density = 100) </figcaption>
+      </td>
+    </tr>
+    <tr align="center">
+      <td>
+          <img src="images/damp_0.png" align="middle" width="400px"/>
+          <figcaption>no damping (damping = 0)</figcaption>
+      </td>
+      <td>
+        <img src="images/pinned4_p2.png" align="middle" width="400px"/>
+        <figcaption>a cloth pinned at four corners</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+    
+  </table>
+</div>
+
+<h2 align="middle">Part 3: Collision with other objects</h2>
+<p> Sphere::collide(...) handles collisions with fabric against a sphere. If a pointmass falls past the boundary of the sphere and into the inside, it is 'bumped' back outside the surface of the sphere. Plane::collide(...) works simelarly. After calculating the expected position of each pointmass, Cloth::simulate(...) iterates through each external object and checks for collisions.
+</p>
+<p> Below are images of a cloth after it has fallen on top of a floating sphere. A lower spring constant makes the cloth more loose and drape closely around the sides of the sphere. A higher spring constant makes for a more taught cloth, which doesn't hug the curve of the sphere as much.
+</p>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/p3_ks_500.png" align="middle" width="400px"/>
+        <figcaption>ks = 500</figcaption>
+      </td>
+      <td>
+        <img src="images/p3_ks5000.png" align="middle" width="400px"/>
+        <figcaption>ks = 5000</figcaption>
+      </td>
+    </tr>
+    <tr align="center">
+      <td>
+          <img src="images/p3_ks_50000.png" align="middle" width="400px"/>
+          <figcaption>ks = 50000</figcaption>
+      </td>
+      <td>
+          <img src="images/p3_plane.png" align="middle" width="400px"/>
+          <figcaption>fabric lying on plane</figcaption>
+      </td>
+    </tr>
+  </table>
+  
+  <h2 align="middle">Part 4: Self Collisions</h2>
+  <p>To handle collisions with the cloth itself, we need to check how close each pointmass in the cloth is to other pointmasses in the cloth. Looping over all pointmasses and checking for a collision with all other pointmasses would take O(n^2) time for each timestep, which is too slow. Instead, cloth::build_spatial_map() stores the pointmasses in a hash map depending on their position in space. Then, cloth::self_collide(...) only checks for collisions with pointmasses that are in the same spatial 'bucket' (3D block of space) as a given pointmass. To hash pointmasses in space, I used a version of <a href="https://en.wikipedia.org/wiki/Pairing_function#Cantor_pairing_function%22">cantor pairing</a> . Cloth::hash_position(...) takes a position and computes the coordinates of a corner of the 3D box that position is in. The x and y values are then cantor paired together to produce a float, and that float is cantor paired with the z coordinate to produce the final key for the hash map.
+  </p>
+  <p> Below are some shots of the cloth falling. Left to right is the direction of time, and parameters vary from top to bottom. A low density cloth produces a more bouncy cloth with wider folds. A low spring constant creates a more foldy/ creased cloth.
+  </p>
+  
+  <div align="middle">
+    <table style="width:100%">
+      <tr align="center">
+        <td>
+          <img src="images/p4_a.png" align="middle" width="400px"/>
+          <figcaption>cloth starts to fall</figcaption>
+        </td>
+        <td>
+          <img src="images/p4_b.png" align="middle" width="400px"/>
+          <figcaption>cloth hitting and bunching at plane</figcaption>
+        </td>
+        <td>
+          <img src="images/p4_c.png" align="middle" width="400px"/>
+          <figcaption>cloth finally at rest on plane</figcaption>
+        </td>
+      </tr>
+      <tr align="center">
+        <td>
+          <img src="images/p4_density1-1.png" align="middle" width="400px"/>
+          <figcaption>density = 1</figcaption>
+        </td>
+        <td>
+          <img src="images/p4_density1-2.png" align="middle" width="400px"/>
+          <figcaption>density = 1</figcaption>
+        </td>
+        <td>
+          <img src="images/p4_density1-3.png" align="middle" width="400px"/>
+          <figcaption>density = 1</figcaption>
+        </td>
+      </tr>
+      <tr align="center">
+        <td>
+          <img src="images/p4_density20-1.png" align="middle" width="400px"/>
+          <figcaption>density = 20</figcaption>
+        </td>
+        <td>
+          <img src="images/p4_density20-2.png" align="middle" width="400px"/>
+          <figcaption>density = 20</figcaption>
+        </td>
+        <td>
+          <img src="images/p4_density20-3.png" align="middle" width="400px"/>
+          <figcaption>density = 20</figcaption>
+        </td>
+      </tr>
+      <tr align="center">
+        <td>
+          <img src="images/p4_ks500-1.png" align="middle" width="400px"/>
+          <figcaption>ks = 500</figcaption>
+        </td>
+        <td>
+          <img src="images/p4_ks500-2.png" align="middle" width="400px"/>
+          <figcaption>ks = 500</figcaption>
+        </td>
+        <td>
+          <img src="images/p4_ks500-3.png" align="middle" width="400px"/>
+          <figcaption>ks = 500</figcaption>
+        </td>
+      </tr>
+      <tr align="center">
+        <td>
+          <img src="images/p4_ks50000-1.png" align="middle" width="400px"/>
+          <figcaption>ks = 50000</figcaption>
+        </td>
+        <td>
+          <img src="images/p4_ks50000-2.png" align="middle" width="400px"/>
+          <figcaption>ks = 50000</figcaption>
+        </td>
+        <td>
+          <img src="images/p4_ks50000-3.png" align="middle" width="400px"/>
+          <figcaption>ks = 50000</figcaption>
+        </td>
+      </tr>
+    </table>
+
+</body>
 </html>
+
